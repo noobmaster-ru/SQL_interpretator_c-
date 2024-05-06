@@ -7,8 +7,8 @@
 int main()
 {
     std::string query;
-
-    SQLParser sql("SELECT * FROM table");
+    std::getline(std::cin, query);
+    SQLParser sql(query);
 
     sql.parse();
 }

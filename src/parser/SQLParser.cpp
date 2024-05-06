@@ -1,5 +1,7 @@
 #include "SQLParser.hpp"
 #include "../models/logfilter.hpp"
+#include "../models/lognode.hpp"
+
 void SQLParser::parse()
 {
     this->skipWhitespace();
@@ -20,6 +22,8 @@ bool SQLParser::match(const std::string &exp)
 void SQLParser::parseSelect()
 {
     std::vector<std::string> fields;
+    std::string tableName;
+    std::vector<struct LogExpressionNode> filters;
     bool allColumns = false;
     while (true)
     {
@@ -39,49 +43,44 @@ void SQLParser::parseSelect()
             break;
     }
     this->skipWhitespace();
-    std::cout << allColumns << std::endl;
 
     if (match("FROM"))
     {
         this->skipWhitespace();
-        std::string tableName = this->parseIdentifier();
+        tableName = this->parseIdentifier();
         this->skipWhitespace();
 
         if (match("WHERE"))
         {
             this->skipWhitespace();
 
-            std::vector<struct LogFilter> filters;
-            while (true)
+            while (this->currentPosition < this->query.length())
             {
-                if (this->query.length() >= this->currentPosition)
-                    break;
-                this->skipWhitespace();
-
-                std::string identifier = this->parseIdentifier();
-                struct LogFilter logFilter;
-                if (match(">"))
-                    logFilter.op = GREATER;
-                else if (match("="))
-                    logFilter.op = EQUAL;
-                else if (match("<"))
-                    logFilter.op = LESS;
-                else if (match("!="))
-                    logFilter.op = NOTEQUAL;
-                this->skipWhitespace();
+                LogExpressionNode node;
                 if (match("("))
                 {
-                    logFilter.isString = true;
-                    std::string value = this->parseIdentifier();
-                    logFilter.stringValue = value;
+                    node.children.push_back(this->parseLogicalExpression());
+                    match(")");
                 }
                 else
                 {
-                    long value = std::stol(this->parseIdentifier());
-                    logFilter.longValue = value;
+                    node.logFilters.push_back(this->parseComparison());
                 }
+                this->skipWhitespace();
+                if (match("AND"))
+                    node.logicalOperator = "AND";
+                else if (match("OR"))
+                    node.logicalOperator = "OR";
+                else
+                {
+                    filters.push_back(node);
+                    break;
+                }
+                this->skipWhitespace();
+                filters.push_back(node);
             }
         }
+        this->printLogExpression(filters);
     }
 }
 
@@ -98,7 +97,105 @@ std::string SQLParser::parseIdentifier()
 void SQLParser::skipWhitespace()
 {
     while (this->currentPosition < this->query.length() && std::isspace(this->query[this->currentPosition]))
-    {
         ++this->currentPosition;
+}
+
+LogFilter SQLParser::parseComparison()
+{
+    LogFilter logFilter;
+    std::string fieldName = this->parseIdentifier();
+
+    this->skipWhitespace();
+
+    std::string op;
+    if (match(">="))
+        op = ">=";
+    else if (match("<="))
+        op = "<=";
+    else if (match("!="))
+        op = "!=";
+    else if (match(">"))
+        op = ">";
+    else if (match("<"))
+        op = "<";
+    else if (match("="))
+        op = "=";
+
+    this->skipWhitespace();
+    bool isString = false;
+    std::string stringValue;
+    long longValue;
+
+    if (match("'"))
+    {
+        stringValue = this->parseIdentifier();
+        isString = true;
+        match("'");
+    }
+    else
+    {
+        std::string s = this->parseIdentifier();
+        isString = false;
+        longValue = std::stol(s);
+    }
+
+    logFilter.field = fieldName;
+    logFilter.isString = isString;
+    logFilter.longValue = longValue;
+    logFilter.stringValue = stringValue;
+    logFilter.op = op;
+    return logFilter;
+}
+
+LogExpressionNode SQLParser::parseLogicalExpression()
+{
+    LogExpressionNode node;
+    if (match("("))
+    {
+        node.children.push_back(this->parseLogicalExpression());
+        match(")");
+    }
+    else
+        node.logFilters.push_back(this->parseComparison());
+    this->skipWhitespace();
+    if (match("AND"))
+    {
+        node.logicalOperator = "AND";
+    }
+    else if (match("OR"))
+    {
+        node.logicalOperator = "OR";
+    }
+    else
+    {
+        return node;
+    }
+    this->skipWhitespace();
+
+    LogExpressionNode nextNode = this->parseLogicalExpression();
+    node.children.push_back(nextNode);
+    return node;
+}
+
+void SQLParser::printLogExpression(const std::vector<LogExpressionNode> &nodes)
+{
+    for (const auto &node : nodes)
+    {
+        for (const auto &filter : node.logFilters)
+        {
+            std::cout << filter.field << " ";
+            std::cout << filter.op << " ";
+            if (filter.isString)
+            {
+                std::cout << "'" << filter.stringValue << "'";
+            }
+            else
+            {
+                std::cout << filter.longValue;
+            }
+            std::cout << " ";
+        }
+        std::cout << node.logicalOperator << " " << std::endl;
+        printLogExpression(node.children);
     }
 }

@@ -15,9 +15,9 @@ enum Operator
 
 struct LogFilter
 {
-    bool isString = false;
+    bool isString;
     std::string field;
-    enum Operator op;
+    std::string op;
     std::string stringValue;
     long longValue;
 };

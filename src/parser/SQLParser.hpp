@@ -5,6 +5,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "../models/logfilter.hpp"
+#include "../models/lognode.hpp"
 
 
 class SQLParser {
@@ -25,6 +27,11 @@ private:
 
     bool match(const std::string &exp);
     std::string parseIdentifier();
+    LogExpressionNode parseLogicalExpression();
+    LogFilter parseComparison();
+
+    void printLogExpression(const std::vector<struct LogExpressionNode> &nodes);
+
     void skipWhitespace();
 };
 
