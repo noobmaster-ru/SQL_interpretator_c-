@@ -4,16 +4,20 @@
 
 #include "../executor/SQLExecutor.hpp"
 #include "../parser/SQLParser.hpp"
+#include <string>
+#include <vector>
+
 
 
 class SQL
 {
 private:
-    SQLExecutor exec;
-    SQLParser parse;
+    SQLExecutor *executor;
+    SQLParser *parser;
 
 public:
     SQL();
+    void run(std::string query);
     ~SQL();
 };
 

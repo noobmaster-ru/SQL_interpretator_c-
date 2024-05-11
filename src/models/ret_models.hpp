@@ -3,6 +3,8 @@
 #define __RET_MODELS_HPP
 
 #include "field.hpp"
+#include <vector>
+#include <string>
 
 typedef enum
 {

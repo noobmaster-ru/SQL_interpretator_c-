@@ -1,6 +1,6 @@
 #ifndef __FIELD_HPP
 #define __FIELD_HPP
-
+#include <string>
 
 struct FieldModel
 {

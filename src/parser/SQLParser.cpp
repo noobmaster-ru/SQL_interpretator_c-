@@ -41,7 +41,7 @@ CreateS *SQLParser::parseCreate()
 {
     this->skipWhitespace();
     std::string tableName = this->parseIdentifier();
-    std::cout << tableName << std::endl;
+
     std::vector<struct FieldModel> fields;
 
     this->skipWhitespace();
