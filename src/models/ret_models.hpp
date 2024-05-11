@@ -28,8 +28,8 @@ typedef struct
 typedef struct
 {
     ClauseType type;
-    SelectS select;
-    CreateS create;
+    SelectS *select;
+    CreateS *create;
 } ParserResult;
 
 #endif

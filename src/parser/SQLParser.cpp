@@ -1,24 +1,30 @@
 #include "SQLParser.hpp"
 
-ParserResult SQLParser::parse()
+ParserResult *SQLParser::parse()
 {
+    ParserResult *parserResult = new ParserResult();
+    parserResult->create = NULL;
+    parserResult->select = NULL;
     this->skipWhitespace();
-    ParserResult parse;
+
     if (match("SELECT"))
     {
-        parse.type = Select;
-        parse.select = *(this->parseSelect());
+        SelectS *s = this->parseSelect();
+        parserResult->type = Select;
+        parserResult->select = s;
     }
     else if (match("CREATE"))
     {
         this->skipWhitespace();
         if (match("TABLE"))
         {
-            parse.create = Create;
-            parse.create = *(this->parseCreate());
+            CreateS *c = this->parseCreate();
+            parserResult->create = c;
+            parserResult->type = Create;
         }
     }
-    return parse;
+
+    return parserResult;
 }
 
 bool SQLParser::match(const std::string &exp)
@@ -47,6 +53,7 @@ CreateS *SQLParser::parseCreate()
             this->skipWhitespace();
             struct FieldModel fieldData;
             std::string fieldName = this->parseIdentifier();
+
             this->skipWhitespace();
 
             fieldData.name = fieldName;
@@ -76,11 +83,11 @@ CreateS *SQLParser::parseCreate()
         this->skipWhitespace();
     }
 
-    CreateS createS;
-    createS.tableName = tableName;
-    createS.fields = fields;
+    CreateS *createS = new CreateS();
+    createS->tableName = tableName;
+    createS->fields = fields;
 
-    return &createS;
+    return createS;
 }
 
 SelectS *SQLParser::parseSelect()
@@ -146,12 +153,12 @@ SelectS *SQLParser::parseSelect()
         }
         this->printLogExpression(filters);
     }
-    SelectS select = new SelectS;
-    select.allColumns = allColumns;
-    select.fields = fields;
-    select.filters = filters;
-    select.tableName = tableName;
-    return &select;
+    SelectS *select = new SelectS();
+    select->allColumns = allColumns;
+    select->fields = fields;
+    select->filters = filters;
+    select->tableName = tableName;
+    return select;
 }
 
 std::string SQLParser::parseIdentifier()

@@ -17,7 +17,7 @@ public:
     std::string query;
 
     SQLParser(const std::string &query) : currentPosition(0), query(query){};
-    ParserResult parse();
+    ParserResult *parse();
 
 private:
     CreateS *parseCreate();

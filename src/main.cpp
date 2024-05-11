@@ -10,5 +10,13 @@ int main()
     std::getline(std::cin, query);
     SQLParser sql(query);
 
-    sql.parse();
+    ParserResult *p = sql.parse();
+
+    if(p->type == Create)
+    {
+        for(const auto &f: p->create->fields)
+        {
+            std::cout << f.name << " " << f.type << std::endl;
+        }
+    }
 }
