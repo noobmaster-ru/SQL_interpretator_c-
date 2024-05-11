@@ -7,9 +7,9 @@
 class SQLExecutor
 {
 public:
-    bool execCreate();
+    bool execCreate(CreateS createStruct);
     SQLExecutor();
-    
+
     ~SQLExecutor();
 };
 
