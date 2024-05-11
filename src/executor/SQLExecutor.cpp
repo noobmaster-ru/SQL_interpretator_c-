@@ -2,16 +2,13 @@
 
 SQLExecutor::SQLExecutor()
 {
-
 }
 
 SQLExecutor::~SQLExecutor()
 {
-
-
 }
 
-bool SQLExecutor::execute()
+bool SQLExecutor::execCreate()
 {
     return true;
 }

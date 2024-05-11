@@ -9,7 +9,9 @@
 typedef enum
 {
     Select,
-    Create
+    Create,
+    Drop,
+    Update
 } ClauseType;
 
 typedef struct
@@ -29,9 +31,23 @@ typedef struct
 
 typedef struct
 {
+    std::string tableName;
+} DropS;
+
+typedef struct
+{
+    std::string tableName;
+    std::vector<struct UpdateData> updates;
+    std::vector<struct LogExpressionNode> filters;
+} UpdateS;
+
+typedef struct
+{
     ClauseType type;
     SelectS *select;
     CreateS *create;
+    DropS *drop;
+    UpdateS *update;
 } ParserResult;
 
 #endif

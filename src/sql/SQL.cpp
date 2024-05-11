@@ -18,10 +18,10 @@ void SQL::run(std::string query)
     this->executor = new SQLExecutor();
     ParserResult *result = this->parser->parse();
 
-    std::cout << result->create->tableName << std::endl;
+    // std::cout << result->create->tableName << std::endl;
 
-    for(const auto &f: result->create->fields)
-    {
-        std::cout << f.name << f.type << std::endl;
-    }
+    // for(const auto &f: result->create->fields)
+    // {
+    //     std::cout << f.name << f.type << std::endl;
+    // }
 }
