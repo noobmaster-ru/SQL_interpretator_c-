@@ -11,7 +11,9 @@ typedef enum
     Select,
     Create,
     Drop,
-    Update
+    Update,
+    Insert,
+    Delete
 } ClauseType;
 
 typedef struct
@@ -43,11 +45,25 @@ typedef struct
 
 typedef struct
 {
+    std::string tableName;
+    std::vector<struct ValuesInsert> values;
+} InsertS;
+
+typedef struct
+{
+    std::string tableName;
+    std::vector<struct LogExpressionNode> filters;
+} DeleteS;
+
+typedef struct
+{
     ClauseType type;
     SelectS *select;
     CreateS *create;
     DropS *drop;
     UpdateS *update;
+    InsertS *insert;
+    DeleteS *deletee;
 } ParserResult;
 
 #endif
