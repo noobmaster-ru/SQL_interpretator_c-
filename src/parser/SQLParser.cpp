@@ -7,8 +7,8 @@ ParserResult *SQLParser::parse()
     parserResult->select = NULL;
     parserResult->drop = NULL;
     parserResult->update = NULL;
-
-    
+    parserResult->insert = NULL;
+    parserResult->deletee = NULL;
     this->skipWhitespace();
 
     if (match("SELECT"))
@@ -43,6 +43,16 @@ ParserResult *SQLParser::parse()
         parserResult->type = Update;
         parserResult->update = u;
     }
+    else if (match("INSERT")){
+        InsertS *i =this->parseInsert();
+        parserResult->type = Insert;
+        parserResult->insert = i;
+    }
+    else if (match("DELETE")){
+        DeleteS *d = this->parseDelete();
+        parserResult->type = Delete;
+        parserResult->deletee = d;
+    } 
 
     return parserResult;
 }
@@ -366,6 +376,112 @@ UpdateS *SQLParser::parseUpdate()
     return update;
 }
 
+InsertS *SQLParser::parseInsert()
+{
+    // INSERT INTO table_name(value1,value2,... ,valueN);
+    this->skipWhitespace();
+    std::string tableName;
+    std::vector<struct ValuesInsert> allValues;
+    if (match("INTO"))
+    {
+        this->skipWhitespace();
+        tableName = this->parseIdentifier();
+        this->skipWhitespace();
+        if (match("("))
+        {
+            while (true)
+            {
+                this->skipWhitespace();
+                ValuesInsert value;
+                std::string stringValue;
+                long longValue;
+                bool isString = false;
+                if (match("'"))
+                {
+                    stringValue = this->parseIdentifier();
+                    isString = true;
+                    match("'");
+                }
+                else
+                {
+                    std::string s = this->parseIdentifier();
+                    longValue = std::stol(s);
+                    isString = false;
+                }   
+                value.isString = isString;
+                value.longValue = longValue;
+                value.stringValue = stringValue;
+                allValues.push_back(value);
+                
+                this->skipWhitespace();
+                if (query[currentPosition] == ',')
+                    ++currentPosition;
+                else
+                    break;
+            }
+        }
+    }
+    // for (const auto &f: allValues){
+    //     if (f.isString == true)
+    //     {
+    //         std::cout << f.stringValue << " ";
+
+    //     }
+    //     else
+    //     {
+    //         std::cout << f.longValue << " ";
+    //     }
+    // }
+    InsertS *insert = new InsertS();
+    insert->tableName = tableName;
+    insert->values = allValues;
+    return insert;
+}
+
+DeleteS *SQLParser::parseDelete(){
+    // DELETE FROM tableName WHERE ...
+    this->skipWhitespace();
+    std::vector<struct LogExpressionNode> filters;
+    std::string tableName;
+    if (match("FROM")){
+        this->skipWhitespace();
+        tableName = this->parseIdentifier();
+        this->skipWhitespace();
+        if (match("WHERE"))
+        {
+            this->skipWhitespace();
+
+            while (this->currentPosition < this->query.length())
+            {
+                LogExpressionNode node;
+                if (match("("))
+                {
+                    node.children.push_back(this->parseLogicalExpression());
+                    match(")");
+                }
+                else
+                    node.logFilters.push_back(this->parseComparison());
+                this->skipWhitespace();
+                if (match("AND"))
+                    node.logicalOperator = "AND";
+                else if (match("OR"))
+                    node.logicalOperator = "OR";
+                else
+                {
+                    filters.push_back(node);
+                    break;
+                }
+                this->skipWhitespace();
+                filters.push_back(node);
+            }
+            this->printLogExpression(filters);
+        }
+    }
+    DeleteS *deletee = new DeleteS();
+    deletee->filters = filters;
+    deletee->tableName = tableName;
+    return deletee;
+}
 void SQLParser::printLogExpression(const std::vector<LogExpressionNode> &nodes)
 {
     for (const auto &node : nodes)

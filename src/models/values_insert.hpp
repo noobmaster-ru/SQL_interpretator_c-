@@ -1,10 +1,8 @@
-#ifndef __UPDATE_DATA_HPP
-
-#define __UPDATE_DATA_HPP
+#ifndef __VALUES_INSERT_HPP
+#define __VALUES_INSERT_HPP
 #include <string>
-struct UpdateData
+struct ValuesInsert
 {
-    std::string field;
     std::string stringValue;
     long longValue;
     bool isString;

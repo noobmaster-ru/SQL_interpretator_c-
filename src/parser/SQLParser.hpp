@@ -10,6 +10,7 @@
 #include "../models/field.hpp"
 #include "../models/ret_models.hpp"
 #include "../models/update_data.hpp"
+#include "../models/values_insert.hpp"
 
 class SQLParser
 {
@@ -23,8 +24,8 @@ public:
 private:
     CreateS *parseCreate();
     SelectS *parseSelect();
-    // void parseInsert();
-    // void parseDelete();
+    InsertS *parseInsert();
+    DeleteS *parseDelete();
     DropS *parseDrop();
     UpdateS *parseUpdate();
 
