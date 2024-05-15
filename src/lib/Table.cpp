@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "Table.h"
+#include "Table.hpp"
 
 #ifndef SEEK_SET
 #define SEEK_SET 0

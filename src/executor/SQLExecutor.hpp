@@ -2,12 +2,14 @@
 #define __SQLEXECUTOR_HPP
 
 #include "../models/ret_models.hpp"
-#include "../lib/Table.h"
+#include "../lib/Table.hpp"
 
 class SQLExecutor
 {
 public:
-    bool execCreate(CreateS createStruct);
+    bool execCreate(CreateS *createStruct);
+    bool execSelect(SelectS *selectStruct);
+    bool execInsert(InsertS)
     SQLExecutor();
 
     ~SQLExecutor();
