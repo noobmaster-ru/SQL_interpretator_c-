@@ -1,4 +1,4 @@
-#include "lib/Table.h"
+#include "lib/Table.hpp"
 #include "sql/SQL.hpp"
 #include <iostream>
 #include <string>
@@ -7,7 +7,11 @@
 int main()
 {
     std::string query;
-    std::getline(std::cin, query);
     SQL sql;
-    sql.run(query);
+    while (true)
+    {
+        std::cout << "[>]:";
+        std::getline(std::cin, query);
+        sql.run(query);
+    }
 }
