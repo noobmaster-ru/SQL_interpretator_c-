@@ -9,6 +9,7 @@
 #include "../models/lognode.hpp"
 #include "../models/field.hpp"
 #include "../models/ret_models.hpp"
+#include "../models/update_data.hpp"
 
 class SQLParser
 {
@@ -24,8 +25,8 @@ private:
     SelectS *parseSelect();
     // void parseInsert();
     // void parseDelete();
-    // void parseDrop();
-    // void parseUpdate();
+    DropS *parseDrop();
+    UpdateS *parseUpdate();
 
     bool match(const std::string &exp);
     std::string parseIdentifier();

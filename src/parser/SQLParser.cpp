@@ -5,6 +5,10 @@ ParserResult *SQLParser::parse()
     ParserResult *parserResult = new ParserResult();
     parserResult->create = NULL;
     parserResult->select = NULL;
+    parserResult->drop = NULL;
+    parserResult->update = NULL;
+
+    
     this->skipWhitespace();
 
     if (match("SELECT"))
@@ -22,6 +26,22 @@ ParserResult *SQLParser::parse()
             parserResult->create = c;
             parserResult->type = Create;
         }
+    }
+    else if (match("DROP"))
+    {
+        this->skipWhitespace();
+        if (match("TABLE"))
+        {
+            DropS *d = this->parseDrop();
+            parserResult->drop = d;
+            parserResult->type = Drop;
+        }
+    }
+    else if (match("UPDATE"))
+    {
+        UpdateS *u = this->parseUpdate();
+        parserResult->type = Update;
+        parserResult->update = u;
     }
 
     return parserResult;
@@ -246,6 +266,104 @@ LogExpressionNode SQLParser::parseLogicalExpression()
     LogExpressionNode nextNode = this->parseLogicalExpression();
     node.children.push_back(nextNode);
     return node;
+}
+
+DropS *SQLParser::parseDrop()
+{
+    this->skipWhitespace();
+    std::string tableName = this->parseIdentifier();
+    std::cout << tableName << std::endl;
+    DropS *drop = new DropS();
+    drop->tableName = tableName;
+    return drop;
+}
+
+UpdateS *SQLParser::parseUpdate()
+{
+
+    this->skipWhitespace();
+    std::string tableName = this->parseIdentifier();
+    std::vector<struct UpdateData> updates;
+    std::vector<struct LogExpressionNode> filters;
+    this->skipWhitespace();
+    if (match("SET"))
+    {
+        this->skipWhitespace();
+        // create vector with struct updatedData: column1 = value, column2 = value2, ... until WHERE-statement
+        while (true)
+        {
+            this->skipWhitespace();
+            UpdateData сolumnWithValue;
+            std::string field = this->parseIdentifier();
+
+            this->skipWhitespace();
+
+            std::string stringValue;
+            long longValue;
+            bool isString = false;
+            if (match("="))
+            {
+                this->skipWhitespace();
+                if (match("'"))
+                {
+                    stringValue = this->parseIdentifier();
+                    сolumnWithValue.stringValue = stringValue;
+                    isString = true;
+                    match("'");
+                }
+                else
+                {
+                    std::string s = this->parseIdentifier();
+                    longValue = std::stol(s);
+                    сolumnWithValue.longValue = longValue;
+                    isString = false;
+                }
+            }
+            сolumnWithValue.field = field;
+            сolumnWithValue.isString = isString;
+            updates.push_back(сolumnWithValue);
+            this->skipWhitespace();
+            if (query[currentPosition] == ',')
+                ++currentPosition;
+            else
+                break;
+        }
+        this->skipWhitespace();
+        if (match("WHERE"))
+        {
+            this->skipWhitespace();
+
+            while (this->currentPosition < this->query.length())
+            {
+                LogExpressionNode node;
+                if (match("("))
+                {
+                    node.children.push_back(this->parseLogicalExpression());
+                    match(")");
+                }
+                else
+                    node.logFilters.push_back(this->parseComparison());
+                this->skipWhitespace();
+                if (match("AND"))
+                    node.logicalOperator = "AND";
+                else if (match("OR"))
+                    node.logicalOperator = "OR";
+                else
+                {
+                    filters.push_back(node);
+                    break;
+                }
+                this->skipWhitespace();
+                filters.push_back(node);
+            }
+            this->printLogExpression(filters);
+        }
+    }
+    UpdateS *update = new UpdateS();
+    update->tableName = tableName;
+    update->updates = updates;
+    update->filters = filters;
+    return update;
 }
 
 void SQLParser::printLogExpression(const std::vector<LogExpressionNode> &nodes)
