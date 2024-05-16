@@ -11,6 +11,7 @@
 #include "../models/ret_models.hpp"
 #include "../models/update_data.hpp"
 #include "../models/values_insert.hpp"
+#include "../models/logic/expressions.hpp"
 
 class SQLParser
 {
@@ -31,10 +32,16 @@ private:
 
     bool match(const std::string &exp);
     std::string parseIdentifier();
-    LogExpressionNode parseLogicalExpression();
-    LogFilter parseComparison();
-
-    void printLogExpression(const std::vector<struct LogExpressionNode> &nodes);
+    Expression *parseExpression();
+    Expression *parseLogicalExpression();
+    Expression *parseLogicalMultiplier();
+    Expression *parseLongExpression();
+    Expression *parseLongTerm();
+    Expression *parseLongFactor();
+    Expression *parseComparisonExpression(bool n);
+    Expression *parseLogicalTerm();
+    Expression *parseLikeExpression();
+    Expression *parseInExpression();
 
     void skipWhitespace();
 };

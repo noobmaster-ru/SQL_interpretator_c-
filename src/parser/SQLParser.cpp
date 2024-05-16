@@ -43,16 +43,18 @@ ParserResult *SQLParser::parse()
         parserResult->type = Update;
         parserResult->update = u;
     }
-    else if (match("INSERT")){
-        InsertS *i =this->parseInsert();
+    else if (match("INSERT"))
+    {
+        InsertS *i = this->parseInsert();
         parserResult->type = Insert;
         parserResult->insert = i;
     }
-    else if (match("DELETE")){
+    else if (match("DELETE"))
+    {
         DeleteS *d = this->parseDelete();
         parserResult->type = Delete;
         parserResult->deletee = d;
-    } 
+    }
 
     return parserResult;
 }
@@ -146,7 +148,7 @@ SelectS *SQLParser::parseSelect()
             break;
     }
     this->skipWhitespace();
-
+    Expression *whereClause;
     if (match("FROM"))
     {
         this->skipWhitespace();
@@ -157,39 +159,94 @@ SelectS *SQLParser::parseSelect()
         {
             this->skipWhitespace();
 
-            while (this->currentPosition < this->query.length())
-            {
-                LogExpressionNode node;
-                if (match("("))
-                {
-                    node.children.push_back(this->parseLogicalExpression());
-                    match(")");
-                }
-                else
-                    node.logFilters.push_back(this->parseComparison());
-                this->skipWhitespace();
-                if (match("AND"))
-                    node.logicalOperator = "AND";
-                else if (match("OR"))
-                    node.logicalOperator = "OR";
-                else
-                {
-                    filters.push_back(node);
-                    break;
-                }
-                this->skipWhitespace();
-                filters.push_back(node);
-            }
+            whereClause = this->parseExpression();
+        } else {
+            whereClause = nullptr;
         }
-        this->printLogExpression(filters);
     }
     SelectS *select = new SelectS();
     select->allColumns = allColumns;
     select->fields = fields;
-    select->filters = filters;
+    select->filters = whereClause;
     select->tableName = tableName;
     return select;
 }
+
+Expression *SQLParser::parseExpression()
+{
+    this->skipWhitespace();
+    if (match("ALL"))
+    {
+    }
+    else
+    {
+        return this->parseLogicalExpression();
+    }
+    return nullptr;
+}
+
+Expression *SQLParser::parseLogicalExpression()
+{
+    Expression *expr = parseLogicalTerm();
+    this->skipWhitespace();
+    while (match("OR"))
+    {
+        this->skipWhitespace();
+        Expression *right = parseLogicalTerm();
+        expr = new LRExpression(expr, right, "OR", false);
+        this->skipWhitespace();
+    }
+
+    return expr;
+}
+
+Expression *SQLParser::parseLogicalTerm()
+{
+    Expression *expr = parseLogicalMultiplier();
+    this->skipWhitespace();
+    while (match("AND"))
+    {
+        this->skipWhitespace();
+        Expression *right = parseLogicalMultiplier();
+        expr = new LRExpression(expr, right, "AND", false);
+        this->skipWhitespace();
+    }
+    return expr;
+}
+
+Expression *SQLParser::parseLogicalMultiplier()
+{
+    if (match("NOT"))
+    {
+        this->skipWhitespace();
+        return parseComparisonExpression(true);
+    }
+    else if (match("( "))
+    {
+        this->skipWhitespace();
+        Expression *expr = parseLogicalExpression();
+        this->skipWhitespace();
+        match(")");
+        return expr;
+    }
+    else if (match("("))
+    {
+        this->skipWhitespace();
+        Expression *expr = parseComparisonExpression(false);
+        this->skipWhitespace();
+        match(")");
+        return expr;
+    }
+}
+
+// while (match("AND"))
+// {
+//     this->skipWhitespace();
+
+//     Expression * right = parseComparisonExpression();
+//     expr = std::make_unique<LRExpression>(std::move(expr), std::move(right), "AND");
+//     this->skipWhitespace();
+// }
 
 std::string SQLParser::parseIdentifier()
 {
@@ -207,75 +264,46 @@ void SQLParser::skipWhitespace()
         ++this->currentPosition;
 }
 
-LogFilter SQLParser::parseComparison()
+bool is_digits(const std::string &str)
 {
-    LogFilter logFilter;
-    std::string fieldName = this->parseIdentifier();
+    return std::all_of(str.begin(), str.end(), ::isdigit); // C++11
+}
+
+Expression *SQLParser::parseComparisonExpression(bool n = false)
+{
+    Expression *expr;
+    this->skipWhitespace();
+    std::string columnName = this->parseIdentifier();
 
     this->skipWhitespace();
-
     std::string op;
+
     if (match(">="))
         op = ">=";
     else if (match("<="))
         op = "<=";
-    else if (match("!="))
-        op = "!=";
-    else if (match(">"))
-        op = ">";
-    else if (match("<"))
-        op = "<";
     else if (match("="))
         op = "=";
+    else if (match("<"))
+        op = "<";
+    else if (match(">"))
+        op = ">";
 
     this->skipWhitespace();
-    bool isString = false;
-    std::string stringValue;
-    long longValue;
 
     if (match("'"))
     {
-        stringValue = this->parseIdentifier();
-        isString = true;
+        std::variant<long, std::string> v = this->parseIdentifier();
+        Expression *p = new ComparisonExpression(columnName, op, v, n);
         match("'");
+        return p;
     }
     else
     {
-        std::string s = this->parseIdentifier();
-        isString = false;
-        longValue = std::stol(s);
+        std::variant<long, std::string> v = std::stol(this->parseIdentifier());
+        Expression *p = new ComparisonExpression(columnName, op, v, n);
+        return p;
     }
-
-    logFilter.field = fieldName;
-    logFilter.isString = isString;
-    logFilter.longValue = longValue;
-    logFilter.stringValue = stringValue;
-    logFilter.op = op;
-    return logFilter;
-}
-
-LogExpressionNode SQLParser::parseLogicalExpression()
-{
-    LogExpressionNode node;
-    if (match("("))
-    {
-        node.children.push_back(this->parseLogicalExpression());
-        match(")");
-    }
-    else
-        node.logFilters.push_back(this->parseComparison());
-    this->skipWhitespace();
-    if (match("AND"))
-        node.logicalOperator = "AND";
-    else if (match("OR"))
-        node.logicalOperator = "OR";
-    else
-        return node;
-    this->skipWhitespace();
-
-    LogExpressionNode nextNode = this->parseLogicalExpression();
-    node.children.push_back(nextNode);
-    return node;
 }
 
 DropS *SQLParser::parseDrop()
@@ -342,31 +370,8 @@ UpdateS *SQLParser::parseUpdate()
         if (match("WHERE"))
         {
             this->skipWhitespace();
-
-            while (this->currentPosition < this->query.length())
-            {
-                LogExpressionNode node;
-                if (match("("))
-                {
-                    node.children.push_back(this->parseLogicalExpression());
-                    match(")");
-                }
-                else
-                    node.logFilters.push_back(this->parseComparison());
-                this->skipWhitespace();
-                if (match("AND"))
-                    node.logicalOperator = "AND";
-                else if (match("OR"))
-                    node.logicalOperator = "OR";
-                else
-                {
-                    filters.push_back(node);
-                    break;
-                }
-                this->skipWhitespace();
-                filters.push_back(node);
-            }
-            this->printLogExpression(filters);
+            Expression *whereClause = this->parseExpression();
+            std::cout << 1;
         }
     }
     UpdateS *update = new UpdateS();
@@ -407,12 +412,12 @@ InsertS *SQLParser::parseInsert()
                     std::string s = this->parseIdentifier();
                     longValue = std::stol(s);
                     isString = false;
-                }   
+                }
                 value.isString = isString;
                 value.longValue = longValue;
                 value.stringValue = stringValue;
                 allValues.push_back(value);
-                
+
                 this->skipWhitespace();
                 if (query[currentPosition] == ',')
                     ++currentPosition;
@@ -421,82 +426,31 @@ InsertS *SQLParser::parseInsert()
             }
         }
     }
-    // for (const auto &f: allValues){
-    //     if (f.isString == true)
-    //     {
-    //         std::cout << f.stringValue << " ";
 
-    //     }
-    //     else
-    //     {
-    //         std::cout << f.longValue << " ";
-    //     }
-    // }
     InsertS *insert = new InsertS();
     insert->tableName = tableName;
     insert->values = allValues;
     return insert;
 }
 
-DeleteS *SQLParser::parseDelete(){
+DeleteS *SQLParser::parseDelete()
+{
     // DELETE FROM tableName WHERE ...
     this->skipWhitespace();
     std::vector<struct LogExpressionNode> filters;
     std::string tableName;
-    if (match("FROM")){
+    if (match("FROM"))
+    {
         this->skipWhitespace();
         tableName = this->parseIdentifier();
         this->skipWhitespace();
         if (match("WHERE"))
         {
-            this->skipWhitespace();
-
-            while (this->currentPosition < this->query.length())
-            {
-                LogExpressionNode node;
-                if (match("("))
-                {
-                    node.children.push_back(this->parseLogicalExpression());
-                    match(")");
-                }
-                else
-                    node.logFilters.push_back(this->parseComparison());
-                this->skipWhitespace();
-                if (match("AND"))
-                    node.logicalOperator = "AND";
-                else if (match("OR"))
-                    node.logicalOperator = "OR";
-                else
-                {
-                    filters.push_back(node);
-                    break;
-                }
-                this->skipWhitespace();
-                filters.push_back(node);
-            }
-            this->printLogExpression(filters);
+            std::cout << "OK" << std::endl;
         }
     }
     DeleteS *deletee = new DeleteS();
     deletee->filters = filters;
     deletee->tableName = tableName;
     return deletee;
-}
-void SQLParser::printLogExpression(const std::vector<LogExpressionNode> &nodes)
-{
-    for (const auto &node : nodes)
-    {
-        for (const auto &filter : node.logFilters)
-        {
-            std::cout << filter.field << " ";
-            std::cout << filter.op << " ";
-            if (filter.isString)
-                std::cout << "'" << filter.stringValue << "'";
-            else
-                std::cout << filter.longValue;
-            std::cout << " ";
-        }
-        std::cout << node.logicalOperator << " " << std::endl;
-        printLogExpression(node.children);
-    }
 }
