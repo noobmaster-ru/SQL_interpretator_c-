@@ -2,6 +2,7 @@
 #include "../models/values_insert.hpp"
 #include <unordered_map>
 #include <iostream>
+#include <iomanip>
 #include "../parser/SQLParser.hpp"
 
 template <typename T, typename... Ts>
@@ -99,6 +100,20 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
 
     std::unordered_map<std::string, enum FieldType> map;
 
+    unsigned int numFields;
+    if (getFieldsNum(tableHandle, &numFields) != OK)
+        return 1;
+    std::vector<std::string> allFields(numFields);
+    for (unsigned i = 0; i < numFields; ++i)
+    {
+        char *fieldName;
+        if (getFieldName(tableHandle, i, &fieldName) != OK)
+        {
+            return 1;
+        }
+        allFields[i] = fieldName;
+    }
+
     if (selectStruct->allColumns)
     {
         unsigned int numFields;
@@ -117,7 +132,7 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
         fields = fieldNames;
     }
 
-    for (const auto &f : fields)
+    for (const auto &f : allFields)
     {
         enum FieldType type;
         res = getFieldType(tableHandle, const_cast<char *>(f.c_str()), &type);
@@ -129,16 +144,22 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
     moveFirst(tableHandle);
     std::vector<int> widths;
     std::cout << std::endl;
+    std::cout << "|";
     for (const auto &s : fields)
     {
-        std::cout << s << " | ";
+        std::cout << std::setw(15) << std::left << s << "|";
     }
     std::cout << std::endl;
-    std::cout << "--------------" << std::endl;
+    for (int i = 0; i < fields.size(); i++)
+    {
+        std::cout << " ";
+        std::cout << "---------------";
+    }
+    std::cout << std::endl;
     while (!afterLast(tableHandle))
     {
         std::vector<std::variant<long, std::string>> v;
-        for (auto &field : fields)
+        for (auto &field : allFields)
         {
             switch (map[field])
             {
@@ -157,11 +178,14 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
         }
         if (selectStruct->filters != nullptr)
         {
-            if (selectStruct->filters->eval(fields, v))
+            if (selectStruct->filters->eval(allFields, v))
             {
-                for (const auto &f : v)
+                std::cout << "|";
+                for (int i = 0; i < allFields.size(); i++)
                 {
-                    std::cout << f << " | ";
+                    std::variant<long, std::string> d = v[i];
+                    if (std::find(fields.begin(), fields.end(), allFields[i]) != fields.end())
+                        std::cout << std::setw(15) << std::left << d << "|";
                 }
                 std::cout << std::endl;
                 result.push_back(v);
@@ -170,9 +194,13 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
         }
         else
         {
-            for (const auto &f : v)
+            std::cout << "|";
+
+            for (int i = 0; i < allFields.size(); i++)
             {
-                std::cout << f << " | ";
+                std::variant<long, std::string> d = v[i];
+                if (std::find(fields.begin(), fields.end(), allFields[i]) != fields.end())
+                    std::cout << std::setw(15) << std::left << d << "|";
             }
             std::cout << std::endl;
             res = moveNext(tableHandle);
@@ -184,6 +212,7 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
             }
         }
     }
+    std::cout << std::endl;
 
     return true;
 }

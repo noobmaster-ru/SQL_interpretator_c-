@@ -22,8 +22,7 @@ public:
     bool n;
     ComparisonExpression(std::string columnName, std::string op, std::variant<long, std::string> &val, bool n) : columnName(columnName), op(op), value(val), n(n)
     {
-        std::cout << std::unitbuf;
-        std::cout << "CreatedComp" << std::endl;
+
     }
     bool eval(std::vector<std::string> &col, std::vector<std::variant<long, std::string>> &row) const override;
 };
@@ -40,8 +39,6 @@ public:
 
     LRExpression(Expression *l, Expression *r, std::string op, bool n) : left(l), right(r), op(op), n(n)
     {
-        std::cout << std::unitbuf;
-        std::cout << "CreatedLR" << std::endl;
     }
     bool eval(std::vector<std::string> &col, std::vector<std::variant<long, std::string>> &row) const override;
 };
