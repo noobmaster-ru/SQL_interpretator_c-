@@ -1,6 +1,8 @@
 #include "SQLExecutor.hpp"
+#include "../models/values_insert.hpp"
 #include <unordered_map>
 #include <iostream>
+#include "../parser/SQLParser.hpp"
 
 template <typename T, typename... Ts>
 std::ostream &operator<<(std::ostream &os, const std::variant<T, Ts...> &v)
@@ -36,7 +38,55 @@ bool SQLExecutor::execCreate(CreateS *createStruct)
     return res == OK;
 }
 
-bool SQLExecutor::execInsert()
+bool SQLExecutor::execInsert(InsertS *insertStruct)
+{
+    THandle tableHandle;
+    enum Errors res = openTable(const_cast<char *>(insertStruct->tableName.c_str()), &tableHandle);
+
+    enum FieldType fieldTypes[insertStruct->values.size()];
+
+    unsigned int numFields;
+    if (getFieldsNum(tableHandle, &numFields) != OK)
+        return 1;
+    std::vector<std::string> fieldNames(numFields);
+
+    for (unsigned i = 0; i < numFields; ++i)
+    {
+        char *fieldName;
+        if (getFieldName(tableHandle, i, &fieldName) != OK)
+        {
+            return 1;
+        }
+        fieldNames[i] = fieldName;
+    }
+    std::vector<std::string> &fields = fieldNames;
+
+    std::unordered_map<std::string, enum FieldType> map;
+
+    for (const auto &f : fields)
+    {
+        enum FieldType type;
+        res = getFieldType(tableHandle, const_cast<char *>(f.c_str()), &type);
+        map.insert(std::make_pair(f, type));
+    }
+    createNew(tableHandle);
+    for (int i = 0; i < fields.size(); i++)
+    {
+        std::string field = fields[i];
+        struct ValuesInsert insertValue = insertStruct->values[i];
+
+        if (insertValue.isString)
+        {
+            putTextNew(tableHandle, const_cast<char *>(field.c_str()), const_cast<char *>(insertValue.stringValue.c_str()));
+        }
+        else
+        {
+            putLongNew(tableHandle, const_cast<char *>(field.c_str()), insertValue.longValue);
+        }
+    }
+    insertNew(tableHandle);
+    closeTable(tableHandle);
+}
 
 bool SQLExecutor::execSelect(SelectS *selectStruct)
 {
@@ -74,7 +124,7 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
         map.insert(std::make_pair(f, type));
     }
 
-    std::vector<std::vector<std::variant<std::string, long>>> result;
+    std::vector<std::vector<std::variant<long, std::string>>> result;
 
     moveFirst(tableHandle);
     std::vector<int> widths;
@@ -87,7 +137,7 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
     std::cout << "--------------" << std::endl;
     while (!afterLast(tableHandle))
     {
-        std::vector<std::variant<std::string, long>> v;
+        std::vector<std::variant<long, std::string>> v;
         for (auto &field : fields)
         {
             switch (map[field])
@@ -105,19 +155,35 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
                 break;
             }
         }
-        for (const auto &f : v)
+        if (selectStruct->filters != nullptr)
         {
-            std::cout << f << " | ";
+            if (selectStruct->filters->eval(fields, v))
+            {
+                for (const auto &f : v)
+                {
+                    std::cout << f << " | ";
+                }
+                std::cout << std::endl;
+                result.push_back(v);
+            }
+            res = moveNext(tableHandle);
         }
-        std::cout << std::endl;
-        res = moveNext(tableHandle);
-        if (res != OK)
+        else
         {
-            printf("Ошибка при перемещении указателя на следующую запись.\n");
-            closeTable(tableHandle);
-            return 1;
+            for (const auto &f : v)
+            {
+                std::cout << f << " | ";
+            }
+            std::cout << std::endl;
+            res = moveNext(tableHandle);
+            if (res != OK)
+            {
+                printf("Ошибка при перемещении указателя на следующую запись.\n");
+                closeTable(tableHandle);
+                return 1;
+            }
         }
-        result.push_back(v);
     }
+
     return true;
 }

@@ -5,6 +5,7 @@
 #include "field.hpp"
 #include <vector>
 #include <string>
+#include "logic/expressions.hpp"
 
 typedef enum
 {
@@ -27,8 +28,7 @@ typedef struct
     std::string tableName;
     std::vector<std::string> fields;
     bool allColumns;
-    std::vector<struct LogExpressionNode> filters;
-
+    Expression *filters;
 } SelectS;
 
 typedef struct

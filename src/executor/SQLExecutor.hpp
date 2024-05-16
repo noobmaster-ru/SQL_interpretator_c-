@@ -9,7 +9,7 @@ class SQLExecutor
 public:
     bool execCreate(CreateS *createStruct);
     bool execSelect(SelectS *selectStruct);
-    bool execInsert(InsertS)
+    bool execInsert(InsertS *insertStruct);
     SQLExecutor();
 
     ~SQLExecutor();

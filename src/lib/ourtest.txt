@@ -13,9 +13,3 @@ SELECT Surname, Phone FROM Students WHERE Age > 19 AND Surname > 'M'
 UPDATE Students SET Age = Age+1 WHERE ALL
 SELECT * FROM Students WHERE ALL
 EXIT
-
-
-
-
-
-
