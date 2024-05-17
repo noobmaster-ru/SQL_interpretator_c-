@@ -316,23 +316,147 @@ DropS *SQLParser::parseDrop()
     return drop;
 }
 
+// long SQLParser::parseNumber()
+// {
+//     size_t start = currentPosition;
+//     long result = 0;
+//     while (isdigit(this->query[this->currentPosition]) )
+//     {
+//         result *= 10;
+//         result = this->query[this->currentPosition] - '0';
+//         this->currentPosition++;
+        
+//     }
+//     return result;
+// }
+
+// // Функция для вычисления постфиксного выражения
+// long evaluatePostfix(const std::string& postfixExpression) {
+//     std::stack<int> operands;
+
+//     for (char c : postfixExpression) {
+//         if (std::isdigit(c)) {
+//             operands.push(c - '0');
+//         } else if (c != ' ') {
+//             long operand2 = operands.top();
+//             operands.pop();
+//             long operand1 = operands.top();
+//             operands.pop();
+
+//             switch (c) {
+//                 case '+':
+//                     operands.push(operand1 + operand2);
+//                     break;
+//                 case '-':
+//                     operands.push(operand1 - operand2);
+//                     break;
+//                 case '*':
+//                     operands.push(operand1 * operand2);
+//                     break;
+//                 case '/':
+//                     operands.push(operand1 / operand2);
+//                     break;
+//                 case '%':
+//                     operands.push(operand1 % operand2);
+//                     break;
+//             }
+//         }
+//     }
+
+//     return operands.top();
+// }
+
+// // Функция для определения приоритета оператора
+// int precedence(char op) {
+//     switch (op) {
+//         case '+':
+//         case '-':
+//             return 1;
+//         case '*':
+//         case '/':
+//             return 2;
+//         case '%':
+//             return 3;
+//         default:
+//             return 0;
+//     }
+// }
+
+// // Функция для преобразования инфиксной записи в постфиксную запись
+// std::string infixToPostfix(const std::string& infixExpression) {
+//     std::stack<char> operators;
+//     std::string postfix;
+
+//     for (char c : infixExpression) {
+//         if (std::isdigit(c)) {
+//             postfix.push_back(c);
+//         } else if (c == '(') {
+//             operators.push(c);
+//         } else if (c == ')') {
+//             while (!operators.empty() && operators.top() != '(') {
+//                 postfix.push_back(' ');
+//                 postfix.push_back(operators.top());
+//                 operators.pop();
+//             }
+//             if (!operators.empty()) {
+//                 operators.pop(); // Удаляем '(' из стека
+//             }
+//         } else {
+//             while (!operators.empty() && precedence(operators.top()) >= precedence(c)) {
+//                 postfix.push_back(' ');
+//                 postfix.push_back(operators.top());
+//                 operators.pop();
+//             }
+//             operators.push(c);
+//         }
+//     }
+
+//     while (!operators.empty()) {
+//         postfix.push_back(' ');
+//         postfix.push_back(operators.top());
+//         operators.pop();
+//     }
+
+//     return postfix;
+// }
+
 UpdateS *SQLParser::parseUpdate()
 {
+    // UPDATE <имя таблицы> SET <имя поля> = <выражение> <WHERE-клауза>
+    // <выражение> ::= <Long-выражение> | <Text-выражение>
+    //
+    // <Long-выражение> ::= <Long-слагаемое> { <+|-> <Long-слагаемое> }
+    // <Text-выражение> ::= <имя поля типа TEXT> | <строка>
 
+    // <Long-слагаемое> ::= <Long-множитель> { <*|/|%> <Long-множитель> }
+    // <Long-множитель> ::= <Long-величина> | ( <Long-выражение> )
+    // <Long-величина> ::= <имя поля типа LONG> | <длинное целое> 
+
+    // Examples:
+    // 1 Age = Age  +-/*%                       ok      done with poliz
+    // 2 Age = 8*(3-2)+1                        ok      done with poliz
+    // 3 Age = 2 - Age*10                                                   хз как делать
+    // 4 Age = 100                              ok      done with poliz     
+    // 5 AGE = PhoneNumber       ok                     done
+    
+    // 6 Name = 'string'   ok                           done 
+    // 7 Name = Surname          ok                     done
     this->skipWhitespace();
     std::string tableName = this->parseIdentifier();
-    std::vector<struct UpdateData> updates;
-    std::vector<struct LogExpressionNode> filters;
+    std::vector<struct UpdateData> updates; // SET ... WHERE
+    std::vector<struct LogExpressionNode> filters; // WHERE ...
     this->skipWhitespace();
     if (match("SET"))
     {
         this->skipWhitespace();
-        // create vector with struct updatedData: column1 = value, column2 = value2, ... until WHERE-statement
+        // create vector with struct updatedData: column1 = value WHERE-statement
         while (true)
         {
             this->skipWhitespace();
-            UpdateData сolumnWithValue;
-            std::string field = this->parseIdentifier();
+            UpdateData valueStructure;
+            std::string first_field = this->parseIdentifier(); // first_field - <имя поля> 
+            valueStructure.name_first_field = first_field;
+
 
             this->skipWhitespace();
 
@@ -343,24 +467,100 @@ UpdateS *SQLParser::parseUpdate()
             {
                 this->skipWhitespace();
                 if (match("'"))
-                {
+                {   
+                    // this is example №6: Name = 'string'
                     stringValue = this->parseIdentifier();
-                    сolumnWithValue.stringValue = stringValue;
+                    valueStructure.stringValue = stringValue;
                     isString = true;
                     match("'");
                 }
                 else
                 {
-                    std::string s = this->parseIdentifier();
-                    longValue = std::stol(s);
-                    сolumnWithValue.longValue = longValue;
-                    isString = false;
+                    
+                    if (isalpha(this->query[this->currentPosition])){ // если это буква
+                        // example №5 or №7: Name = Surname or Age = PhoneNumber
+                        std::string s = this->parseIdentifier(); // this is second identifier,откуда нужно получить long значение или text значение
+                        valueStructure.name_second_field = s;
+                        this->skipWhitespace();
+
+                        // example №1: Age = Age +-*/% POLIZexpresion
+                        if (match("+")){
+                            this->skipWhitespace();
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                            long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            valueStructure.longValue = resultOfPOLIZ;
+                            valueStructure.operand = "+";
+                        }else if (match("-")){
+                            this->skipWhitespace();
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                            long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            valueStructure.longValue = resultOfPOLIZ;
+                            valueStructure.operand = "-";
+                        }else if (match("*")){
+                            this->skipWhitespace();
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                            long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            valueStructure.longValue = resultOfPOLIZ;
+                            valueStructure.operand = "*";
+                        }else if (match("/")){
+                            this->skipWhitespace();
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                            long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            valueStructure.longValue = resultOfPOLIZ;
+                            valueStructure.operand = "/";
+                        }else if (match("%")){}
+                            this->skipWhitespace();
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                            long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            valueStructure.longValue = resultOfPOLIZ;
+                            valueStructure.operand = "%";
+                    }
+                    else{   
+                        // examples  №2 and №4
+                        this->skipWhitespace();
+                        std::string restOfString = this->query.substr(currentPosition,this->query.length() - currentPosition);
+                        std::vector<std::string> tokens = POLIZ::tokenizeExpression(restOfString);
+                        std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                        long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                        valueStructure.longValue = resultOfPOLIZ;
+                        isString = false;
+                        // std::string searchOperands = "+-/%*";
+                        // // Перебор символов
+                        // bool foundAny = false;
+                        // for (char c: searchOperands){
+                        //     size_t found = searchString.find(c);
+                        //     if (found != std::string::npos) {
+                        //         foundAny = true; // - poliz
+                        //         break;
+                        //     }
+                        // }
+                        // if (foundAny){
+                        //     // example №2: Age = 8*(3-2)+1
+                        //     this->skipWhitespace();
+                        //     std::string infixExpression = this->query.substr(currentPosition,this->query.length() - currentPosition);
+                        //     std::string postfixExpression = infixToPostfix(infixExpression);
+                        //     long result = evaluatePostfix(postfixExpression);
+                        //     valueStructure.longValue = result;
+                        // }
+                        // else{
+                        //     // this is example №4 : Age = 100 
+                        //     std::string s = this->parseIdentifier();
+                        //     longValue = std::stol(s);
+                        //     valueStructure.longValue = longValue;
+                        //     isString = false;
+                        // }
+                    }
                 }
             }
-            сolumnWithValue.field = field;
-            сolumnWithValue.isString = isString;
-            updates.push_back(сolumnWithValue);
+            valueStructure.isString = isString;
+            updates.push_back(valueStructure);
             this->skipWhitespace();
+            // это если у нас много условий будет, хотя всего одно должно быть
             if (query[currentPosition] == ',')
                 ++currentPosition;
             else
