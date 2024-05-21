@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <stack>
 #include <set>
 #include "../models/logfilter.hpp"
 #include "../models/lognode.hpp"
@@ -13,6 +14,7 @@
 #include "../models/update_data.hpp"
 #include "../models/values_insert.hpp"
 #include "../models/logic/expressions.hpp"
+#include "../parser/poliz/POLIZ.hpp"
 
 class SQLParser
 {
@@ -45,6 +47,7 @@ private:
     Expression *parseInExpression();
 
     void skipWhitespace();
+    long parseNumber();
 };
 
 #endif
