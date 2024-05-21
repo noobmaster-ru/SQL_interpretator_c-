@@ -169,6 +169,11 @@ SelectS *SQLParser::parseSelect()
                 ++currentPosition;
             else
                 break;
+            whereClause = this->parseExpression();
+        }
+        else
+        {
+            whereClause = nullptr;
         }
 
         this->skipWhitespace();
@@ -210,6 +215,8 @@ Expression *SQLParser::parseExpression()
     this->skipWhitespace();
     if (match("ALL"))
     {
+        Expression *p = new AllExpression();
+        return p;
     }
     else
     {
@@ -247,11 +254,16 @@ Expression *SQLParser::parseLogicalTerm()
     return expr;
 }
 
+Expression *SQLParser::parseInExpression()
+{
+}
+
 Expression *SQLParser::parseLogicalMultiplier()
 {
     if (match("NOT"))
     {
         this->skipWhitespace();
+
         return parseComparisonExpression(true);
     }
     else if (match("("))
@@ -270,6 +282,12 @@ Expression *SQLParser::parseLogicalMultiplier()
         match(")");
         return expr;
     }
+    else
+    {
+        this->skipWhitespace();
+        Expression *expr = parseComparisonExpression(false);
+        return expr;
+    }
 }
 
 // while (match("AND"))
@@ -284,7 +302,7 @@ Expression *SQLParser::parseLogicalMultiplier()
 std::string SQLParser::parseIdentifier()
 {
     size_t start = currentPosition;
-    while (isalnum(this->query[this->currentPosition]) || this->query[this->currentPosition] == '_' || this->query[this->currentPosition] == '*')
+    while (isalnum(this->query[this->currentPosition]) || this->query[this->currentPosition] == '_' || this->query[this->currentPosition] == '*' || this->query[this->currentPosition] == '-' || this->query[this->currentPosition] == '%')
     {
         this->currentPosition++;
     }
@@ -321,6 +339,54 @@ Expression *SQLParser::parseComparisonExpression(bool n = false)
         op = "<";
     else if (match(">"))
         op = ">";
+    else if (match("NOT"))
+        n = !n;
+
+    this->skipWhitespace();
+
+    if (match("LIKE"))
+    {
+        this->skipWhitespace();
+        match("'");
+        std::string pattern = parseIdentifier();
+        match("'");
+
+        Expression *p = new LikeExpression(columnName, pattern, n);
+        return p;
+    }
+    else if (match("IN"))
+    {
+        this->skipWhitespace();
+        std::set<std::variant<long, std::string>> s;
+
+        if (match("("))
+        {
+            this->skipWhitespace();
+            while (!match(")"))
+            {
+                this->skipWhitespace();
+                if (match("'"))
+                {
+                    std::string p = this->parseIdentifier();
+                    match("'");
+                    std::variant<long, std::string> v = p;
+                    s.insert(v);
+                }
+                else
+                {
+                    std::string number = this->parseIdentifier();
+                    long l = std::stol(number);
+                    std::variant<long, std::string> v = l;
+                    s.insert(v);
+                }
+                match(",");
+                this->skipWhitespace();
+            }
+        }
+
+        Expression *e = new InExpression(columnName, s, n);
+        return e;
+    }
 
     this->skipWhitespace();
 

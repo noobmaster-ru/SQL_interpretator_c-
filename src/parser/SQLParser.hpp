@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <stack>
+#include <set>
 #include "../models/logfilter.hpp"
 #include "../models/lognode.hpp"
 #include "../models/field.hpp"

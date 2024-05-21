@@ -22,7 +22,6 @@ public:
     bool n;
     ComparisonExpression(std::string columnName, std::string op, std::variant<long, std::string> &val, bool n) : columnName(columnName), op(op), value(val), n(n)
     {
-
     }
     bool eval(std::vector<std::string> &col, std::vector<std::variant<long, std::string>> &row) const override;
 };
@@ -55,6 +54,8 @@ public:
     {
     }
     bool eval(std::vector<std::string> &col, std::vector<std::variant<long, std::string>> &row) const override;
+    bool like(std::string &value, const std::string &pattern) const;
+    bool matchBracket(char &c, const std::string &pattern, size_t &pIdx) const;
 };
 
 class InExpression : public Expression
@@ -66,5 +67,12 @@ public:
     bool n;
     InExpression(std::string colName, std::set<std::variant<long, std::string>> &vals, bool n) : columnName(colName), values(vals), n(n) {}
     bool eval(std::vector<std::string> &col, std::vector<std::variant<long, std::string>> &row) const override;
+};
+
+class AllExpression : public Expression
+{
+public:
+    AllExpression() {}
+    bool eval(std::vector<std::string> &col, std::vector<std::variant<long, std::string>> &row) const { return true; }
 };
 #endif
