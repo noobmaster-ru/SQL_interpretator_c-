@@ -169,11 +169,6 @@ SelectS *SQLParser::parseSelect()
                 ++currentPosition;
             else
                 break;
-            whereClause = this->parseExpression();
-        }
-        else
-        {
-            whereClause = nullptr;
         }
 
         this->skipWhitespace();
