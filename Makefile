@@ -4,7 +4,7 @@ SRC_DIR = ./src
 OBJ_DIR = ./obj
 BIN_DIR = ./build
 
-SRC_FILES := $(shell find $(SRC_DIR) -type f -name "*.cpp")
+SRC_FILES := $(shell find $(SRC_DIR) -type f -name "*.cpp" -not -path "*/sockets/*")
 OBJ_FILES := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 EXECUTABLE = $(BIN_DIR)/sql
 
