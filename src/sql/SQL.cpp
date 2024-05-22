@@ -14,17 +14,24 @@ void SQL::run(std::string query)
 {
     this->parser = new SQLParser(query);
     this->executor = new SQLExecutor();
-    ParserResult *result = this->parser->parse();
-    if (result->type == Create)
+    try
     {
-        this->executor->execCreate(result->create);
+        ParserResult *result = this->parser->parse();
+        if (result->type == Create)
+        {
+            this->executor->execCreate(result->create);
+        }
+        else if (result->type == Select)
+        {
+            this->executor->execSelect(result->select);
+        }
+        else if (result->type == Insert)
+        {
+            this->executor->execInsert(result->insert);
+        }
     }
-    else if (result->type == Select)
+    catch (const std::string &ex)
     {
-        this->executor->execSelect(result->select);
-    }
-    else if (result->type == Insert)
-    {
-        this->executor->execInsert(result->insert);
+        std::cerr << ex << '\n';
     }
 }

@@ -40,7 +40,7 @@ typedef struct
 {
     std::string tableName;
     std::vector<struct UpdateData> updates;
-    std::vector<struct LogExpressionNode> filters;
+    Expression *filters;
 } UpdateS;
 
 typedef struct

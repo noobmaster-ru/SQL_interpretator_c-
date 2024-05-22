@@ -2,70 +2,68 @@
 
 ParserResult *SQLParser::parse()
 {
-    try{
-        ParserResult *parserResult = new ParserResult();
-        parserResult->create = NULL;
-        parserResult->select = NULL;
-        parserResult->drop = NULL;
-        parserResult->update = NULL;
-        parserResult->insert = NULL;
-        parserResult->deletee = NULL;
-        this->skipWhitespace();
+    ParserResult *parserResult = new ParserResult();
+    parserResult->create = NULL;
+    parserResult->select = NULL;
+    parserResult->drop = NULL;
+    parserResult->update = NULL;
+    parserResult->insert = NULL;
+    parserResult->deletee = NULL;
+    this->skipWhitespace();
 
-        if (match("SELECT"))
-        {
-            SelectS *s = this->parseSelect();
-            parserResult->type = Select;
-            parserResult->select = s;
-        }
-        else if (match("CREATE"))
-        {
-            this->skipWhitespace();
-            if (match("TABLE"))
-            {
-                CreateS *c = this->parseCreate();
-                parserResult->create = c;
-                parserResult->type = Create;
-            }
-        }
-        else if (match("DROP"))
-        {
-            this->skipWhitespace();
-            if (match("TABLE"))
-            {
-                DropS *d = this->parseDrop();
-                parserResult->drop = d;
-                parserResult->type = Drop;
-            }
-        }
-        else if (match("UPDATE"))
-        {
-            UpdateS *u = this->parseUpdate();
-            parserResult->type = Update;
-            parserResult->update = u;
-        }
-        else if (match("INSERT"))
-        {
-            InsertS *i = this->parseInsert();
-            parserResult->type = Insert;
-            parserResult->insert = i;
-        }
-        else if (match("DELETE"))
-        {
-            DeleteS *d = this->parseDelete();
-            parserResult->type = Delete;
-            parserResult->deletee = d;
-        }
-        else{
-            std::string errorString = "Syntax error at parse. Current position: ";
-            errorString += std::to_string(this->currentPosition);
-            throw errorString;
-        }
-        return parserResult;
+    if (match("SELECT"))
+    {
+        SelectS *s = this->parseSelect();
+        parserResult->type = Select;
+        parserResult->select = s;
     }
-    catch(const std::exception &ex){
-        std::cerr << ex.what() << '\n';
+    else if (match("CREATE"))
+    {
+        this->skipWhitespace();
+        if (match("TABLE"))
+        {
+            CreateS *c = this->parseCreate();
+            parserResult->create = c;
+            parserResult->type = Create;
+        }
     }
+    else if (match("DROP"))
+    {
+        this->skipWhitespace();
+        if (match("TABLE"))
+        {
+            DropS *d = this->parseDrop();
+            parserResult->drop = d;
+            parserResult->type = Drop;
+        }
+    }
+    else if (match("UPDATE"))
+    {
+        UpdateS *u = this->parseUpdate();
+        parserResult->type = Update;
+        parserResult->update = u;
+    }
+    else if (match("INSERT"))
+    {
+        InsertS *i = this->parseInsert();
+        parserResult->type = Insert;
+        parserResult->insert = i;
+    }
+    else if (match("DELETE"))
+    {
+        DeleteS *d = this->parseDelete();
+        parserResult->type = Delete;
+        parserResult->deletee = d;
+    }
+    else
+    {
+        std::string errorString = "Syntax error at parse.\n" + this->query + "\n";
+        for (int i = 0; i < this->currentPosition; i++)
+            errorString += " ";
+        errorString += "^";
+        throw errorString;
+    }
+    return parserResult;
 }
 
 bool SQLParser::match(const std::string &exp)
@@ -80,7 +78,8 @@ bool SQLParser::match(const std::string &exp)
 
 CreateS *SQLParser::parseCreate()
 {
-    try{
+    try
+    {
         this->skipWhitespace();
         std::string tableName = this->parseIdentifier();
 
@@ -109,9 +108,12 @@ CreateS *SQLParser::parseCreate()
                 {
                     int textLen = std::stoi(this->parseIdentifier());
                     fieldData.len = textLen;
-                    if (!match(")")){
-                        std::string errorString = "Syntax error at parseCreate. Expected ')'. Current position: ";
-                        errorString += std::to_string(this->currentPosition);
+                    if (!match(")"))
+                    {
+                        std::string errorString = "Syntax error at parseCreate. Expected ')'\n" + this->query + "\n";
+                        for (int i = 0; i < this->currentPosition; i++)
+                            errorString += " ";
+                        errorString += "^";
                         throw errorString;
                     }
                 }
@@ -128,8 +130,12 @@ CreateS *SQLParser::parseCreate()
             }
             this->skipWhitespace();
         }
-        else{
-            std::string errorString = "Syntax error at parseCreate. Expected '('. Current position: ";
+        else
+        {
+            std::string errorString = "Syntax error at parseCreate. Expected '('\n" + this->query + "\n";
+            for (int i = 0; i < this->currentPosition; i++)
+                errorString += " ";
+            errorString += "^";
             errorString += std::to_string(this->currentPosition);
             throw errorString;
         }
@@ -139,14 +145,16 @@ CreateS *SQLParser::parseCreate()
 
         return createS;
     }
-    catch(const std::exception &ex){
+    catch (const std::exception &ex)
+    {
         std::cerr << ex.what() << '\n';
     }
 }
 
 SelectS *SQLParser::parseSelect()
 {
-    try{
+    try
+    {
         // SELECT id, name, age FROM table
         // SELECT *
         std::vector<std::string> fields;
@@ -184,13 +192,18 @@ SelectS *SQLParser::parseSelect()
                 this->skipWhitespace();
 
                 whereClause = this->parseExpression();
-            } else {
+            }
+            else
+            {
                 whereClause = nullptr;
             }
         }
-        else{
-            std::string errorString = "Syntax error at parseSelect. Expected 'FROM'. Current position: ";
-            errorString += std::to_string(this->currentPosition);
+        else
+        {
+            std::string errorString = "Syntax error at parseSelect. Expected 'FROM'.\n" + this->query + "\n";
+            for (int i = 0; i < this->currentPosition; i++)
+                errorString += " ";
+            errorString += "^";
             throw errorString;
         }
         SelectS *select = new SelectS();
@@ -200,7 +213,8 @@ SelectS *SQLParser::parseSelect()
         select->tableName = tableName;
         return select;
     }
-    catch(const std::exception &ex){
+    catch (const std::exception &ex)
+    {
         std::cerr << ex.what() << '\n';
     }
 }
@@ -402,27 +416,32 @@ Expression *SQLParser::parseComparisonExpression(bool n = false)
 
 DropS *SQLParser::parseDrop()
 {
-    try{
+    try
+    {
         this->skipWhitespace();
         std::string tableName;
-        if (match("DROP")){
+        if (match("DROP"))
+        {
             tableName = this->parseIdentifier();
             // std::cout << tableName << std::endl;
         }
-        else{            
-            std::string errorString = "Syntax error at parseDrop. Expected 'DROP'. Current position: ";
-            errorString += std::to_string(this->currentPosition);
+        else
+        {
+            std::string errorString = "Syntax error at parseDrop. Expected 'DROP'\n" + this->query + "\n";
+            for (int i = 0; i < this->currentPosition; i++)
+                errorString += " ";
+            errorString += "^";
             throw errorString;
         }
         DropS *drop = new DropS();
         drop->tableName = tableName;
         return drop;
     }
-    catch(const std::exception &ex){
+    catch (const std::exception &ex)
+    {
         std::cerr << ex.what() << '\n';
     }
 }
-
 
 UpdateS *SQLParser::parseUpdate()
 {
@@ -434,151 +453,158 @@ UpdateS *SQLParser::parseUpdate()
 
     // <Long-слагаемое> ::= <Long-множитель> { <*|/|%> <Long-множитель> }
     // <Long-множитель> ::= <Long-величина> | ( <Long-выражение> )
-    // <Long-величина> ::= <имя поля типа LONG> | <длинное целое> 
+    // <Long-величина> ::= <имя поля типа LONG> | <длинное целое>
 
     // Examples:
     // 1 Age = Age  +-/*%                       ok      done with poliz
     // 2 Age = 8*(3-2)+1                        ok      done with poliz
     // 3 Age = 2 - Age*10                                                   хз как делать. думаю можно без этого обойтись
-    // 4 Age = 100                              ok      done with poliz     
+    // 4 Age = 100                              ok      done with poliz
     // 5 AGE = PhoneNumber       ok                     done
-    
-    // 6 Name = 'string'   ok                           done 
+
+    // 6 Name = 'string'   ok                           done
     // 7 Name = Surname          ok                     done
-    try{
+    this->skipWhitespace();
+    std::string tableName = this->parseIdentifier();
+    std::vector<struct UpdateData> updates;        // SET ... WHERE
+    this->skipWhitespace();
+    if (match("SET"))
+    {
+        // вот здесь рассмотрел все случаи, поэтому без throw
         this->skipWhitespace();
-        std::string tableName = this->parseIdentifier();
-        std::vector<struct UpdateData> updates; // SET ... WHERE
-        std::vector<struct LogExpressionNode> filters; // WHERE ...
-        this->skipWhitespace();
-        if (match("SET"))
+        // create vector with struct updatedData: column1 = value WHERE-statement
+        while (true)
         {
-            // вот здесь рассмотрел все случаи, поэтому без throw
             this->skipWhitespace();
-            // create vector with struct updatedData: column1 = value WHERE-statement
-            while (true)
+            UpdateData valueStructure;
+            std::string first_field = this->parseIdentifier(); // first_field - <имя поля>
+            valueStructure.name_first_field = first_field;
+
+            this->skipWhitespace();
+
+            std::string stringValue;
+            long longValue;
+            bool isString = false;
+            if (match("="))
             {
                 this->skipWhitespace();
-                UpdateData valueStructure;
-                std::string first_field = this->parseIdentifier(); // first_field - <имя поля> 
-                valueStructure.name_first_field = first_field;
-
-
-                this->skipWhitespace();
-
-                std::string stringValue;
-                long longValue;
-                bool isString = false;
-                if (match("="))
+                if (match("'"))
                 {
-                    this->skipWhitespace();
-                    if (match("'"))
-                    {   
-                        // this is example №6: Name = 'string'
-                        stringValue = this->parseIdentifier();
-                        valueStructure.stringValue = stringValue;
-                        isString = true;
-                        match("'");
-                    }
-                    else
-                    {
-                        
-                        if (isalpha(this->query[this->currentPosition])){ // если это буква
-                            // example №5 or №7: Name = Surname or Age = PhoneNumber
-                            std::string s = this->parseIdentifier(); // this is second identifier,откуда нужно получить long значение или text значение
-                            valueStructure.name_second_field = s;
-                            this->skipWhitespace();
+                    // this is example №6: Name = 'string'
+                    stringValue = this->parseIdentifier();
+                    valueStructure.stringValue = stringValue;
+                    isString = true;
+                    match("'");
+                }
+                else
+                {
 
-                            // example №1: Age = Age +-*/% POLIZexpresion
-                            if (match("+")){
-                                this->skipWhitespace();
-                                std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
-                                std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
-                                long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
-                                valueStructure.longValue = resultOfPOLIZ;
-                                valueStructure.operand = "+";
-                            }else if (match("-")){
-                                this->skipWhitespace();
-                                std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
-                                std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
-                                long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
-                                valueStructure.longValue = resultOfPOLIZ;
-                                valueStructure.operand = "-";
-                            }else if (match("*")){
-                                this->skipWhitespace();
-                                std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
-                                std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
-                                long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
-                                valueStructure.longValue = resultOfPOLIZ;
-                                valueStructure.operand = "*";
-                            }else if (match("/")){
-                                this->skipWhitespace();
-                                std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
-                                std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
-                                long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
-                                valueStructure.longValue = resultOfPOLIZ;
-                                valueStructure.operand = "/";
-                            }else if (match("%")){}
-                                this->skipWhitespace();
-                                std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
-                                std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
-                                long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
-                                valueStructure.longValue = resultOfPOLIZ;
-                                valueStructure.operand = "%";
-                        }
-                        else{   
-                            // examples  №2 and №4
+                    if (isalpha(this->query[this->currentPosition]))
+                    { // если это буква
+                        // example №5 or №7: Name = Surname or Age = PhoneNumber
+                        std::string s = this->parseIdentifier(); // this is second identifier,откуда нужно получить long значение или text значение
+                        valueStructure.name_second_field = s;
+                        this->skipWhitespace();
+
+                        // example №1: Age = Age +-*/% POLIZexpresion
+                        if (match("+"))
+                        {
                             this->skipWhitespace();
-                            std::string restOfString = this->query.substr(currentPosition,this->query.length() - currentPosition);
-                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(restOfString);
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
                             std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
                             long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
                             valueStructure.longValue = resultOfPOLIZ;
-                            isString = false;
-
+                            valueStructure.operand = "+";
                         }
+                        else if (match("-"))
+                        {
+                            this->skipWhitespace();
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                            long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            valueStructure.longValue = resultOfPOLIZ;
+                            valueStructure.operand = "-";
+                        }
+                        else if (match("*"))
+                        {
+                            this->skipWhitespace();
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                            long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            valueStructure.longValue = resultOfPOLIZ;
+                            valueStructure.operand = "*";
+                        }
+                        else if (match("/"))
+                        {
+                            this->skipWhitespace();
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                            long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            valueStructure.longValue = resultOfPOLIZ;
+                            valueStructure.operand = "/";
+                        }
+                        else if (match("%"))
+                        {
+                        }
+                        this->skipWhitespace();
+                        std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                        std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                        long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                        valueStructure.longValue = resultOfPOLIZ;
+                        valueStructure.operand = "%";
+                    }
+                    else
+                    {
+                        // examples  №2 and №4
+                        this->skipWhitespace();
+                        std::string restOfString = this->query.substr(currentPosition, this->query.length() - currentPosition);
+                        std::vector<std::string> tokens = POLIZ::tokenizeExpression(restOfString);
+                        std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                        long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                        valueStructure.longValue = resultOfPOLIZ;
+                        isString = false;
                     }
                 }
-                valueStructure.isString = isString;
-                updates.push_back(valueStructure);
-                this->skipWhitespace();
-                // это если у нас много условий будет, хотя всего одно должно быть
-                if (query[currentPosition] == ',')
-                    ++currentPosition;
-                else
-                    break;
             }
-
-
+            valueStructure.isString = isString;
+            updates.push_back(valueStructure);
             this->skipWhitespace();
-            if (match("WHERE"))
-            {
-                this->skipWhitespace();
-                Expression *whereClause = this->parseExpression();
-                std::cout << 1;
-            }
+            // это если у нас много условий будет, хотя всего одно должно быть
+            if (query[currentPosition] == ',')
+                ++currentPosition;
             else
-            {
-                std::string errorString = "Syntax error at parseUpdate. Expected 'WHERE'. Current position: ";
-                errorString += std::to_string(this->currentPosition);
-                throw errorString; 
-            }
+                break;
+        }
+
+        this->skipWhitespace();
+        if (match("WHERE"))
+        {
+            this->skipWhitespace();
+            Expression *whereClause = this->parseExpression();
+            std::cout << 1;
         }
         else
         {
-            std::string errorString = "Syntax error at parseUpdate. Expected 'SET'. Current position: ";
-            errorString += std::to_string(this->currentPosition);
-            throw errorString; 
+            std::string errorString = "Syntax error at parseUpdate. Expected 'WHERE'\n" + this->query + "\n";
+            for (int i = 0; i < this->currentPosition; i++)
+                errorString += " ";
+            errorString += "^";
+            throw errorString;
         }
-        UpdateS *update = new UpdateS();
-        update->tableName = tableName;
-        update->updates = updates;
-        update->filters = filters;
-        return update;
     }
-    catch(const std::exception &ex){
-        std::cerr << ex.what() << '\n';
+    else
+    {
+        std::string errorString = "Syntax error at parseUpdate. Expected 'SET'\n" + this->query + "\n";
+        for (int i = 0; i < this->currentPosition; i++)
+            errorString += " ";
+        errorString += "^";
+        throw errorString;
     }
+    UpdateS *update = new UpdateS();
+    update->tableName = tableName;
+    update->updates = updates;
+    // update->filters = ;
+    return update;
 }
 
 InsertS *SQLParser::parseInsert()
@@ -617,8 +643,10 @@ InsertS *SQLParser::parseInsert()
                     }
                     else
                     {
-                        std::string errorString = "Syntax error at parseInsert. Wrong stringValue syntax. Current position: ";
-                        errorString += std::to_string(this->currentPosition);
+                        std::string errorString = "Syntax error at parseInsert. Wrong stringValue syntax '('\n" + this->query + "\n";
+                        for (int i = 0; i < this->currentPosition; i++)
+                            errorString += " ";
+                        errorString += "^";
                         throw errorString;
                     }
                     value.isString = isString;
@@ -635,14 +663,19 @@ InsertS *SQLParser::parseInsert()
             }
             else
             {
-                std::string errorString = "Syntax error at parseInsert. Expected '('. Current position: ";
-                errorString += std::to_string(this->currentPosition);
+                std::string errorString = "Syntax error at parseInsert. Expected '('\n" + this->query + "\n";
+                for (int i = 0; i < this->currentPosition; i++)
+                    errorString += " ";
+                errorString += "^";
                 throw errorString;
             }
         }
-        else{
-            std::string errorString = "Syntax error at parseInsert. Expected 'INTO'. Current position: ";
-            errorString += std::to_string(this->currentPosition);
+        else
+        {
+            std::string errorString = "Syntax error at parseInsert. Expected 'INTO'\n" + this->query + "\n";
+            for (int i = 0; i < this->currentPosition; i++)
+                errorString += " ";
+            errorString += "^";
             throw errorString;
         }
         InsertS *insert = new InsertS();
@@ -650,14 +683,16 @@ InsertS *SQLParser::parseInsert()
         insert->values = allValues;
         return insert;
     }
-    catch(const std::exception &ex){
+    catch (const std::exception &ex)
+    {
         std::cerr << ex.what() << '\n';
     }
 }
 
 DeleteS *SQLParser::parseDelete()
 {
-    try{
+    try
+    {
         // DELETE FROM tableName WHERE ...
         this->skipWhitespace();
         std::vector<struct LogExpressionNode> filters;
@@ -674,15 +709,19 @@ DeleteS *SQLParser::parseDelete()
             }
             else
             {
-                std::string errorString = "Syntax error at parseDelete. Expected 'WHERE'. Current position: ";
-                errorString += std::to_string(this->currentPosition);
+                std::string errorString = "Syntax error at parseDelete. Expected 'WHERE'\n" + this->query + "\n";
+                for (int i = 0; i < this->currentPosition; i++)
+                    errorString += " ";
+                errorString += "^";
                 throw errorString;
             }
         }
         else
         {
-            std::string errorString = "Syntax error at parseDelete. Expected 'FROM'. Current position: ";
-            errorString += std::to_string(this->currentPosition);
+            std::string errorString = "Syntax error at parseDelete. Expected 'FROM'\n" + this->query + "\n";
+            for (int i = 0; i < this->currentPosition; i++)
+                errorString += " ";
+            errorString += "^";
             throw errorString;
         }
         DeleteS *deletee = new DeleteS();
@@ -690,7 +729,8 @@ DeleteS *SQLParser::parseDelete()
         deletee->tableName = tableName;
         return deletee;
     }
-    catch(const std::exception &ex){
+    catch (const std::exception &ex)
+    {
         std::cerr << ex.what() << '\n';
     }
 }
