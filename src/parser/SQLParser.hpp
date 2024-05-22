@@ -14,7 +14,7 @@
 #include "../models/update_data.hpp"
 #include "../models/values_insert.hpp"
 #include "../models/logic/expressions.hpp"
-#include "../parser/poliz/POLIZ.hpp"
+// #include "../parser/poliz/POLIZ.hpp"
 
 class SQLParser
 {
