@@ -82,7 +82,7 @@ std::vector<std::string> POLIZ::tokenizeExpression(const std::string& expression
     for (char c : expression) {
         if (std::isdigit(c)) {
             currentToken += c; // Add digit to current token
-        } else {
+        } else if (!isspace(c)){
             // Add current token to vector if not empty
             if (!currentToken.empty()) {
                 tokens.push_back(currentToken);
