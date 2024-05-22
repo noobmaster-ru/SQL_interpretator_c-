@@ -466,6 +466,8 @@ UpdateS *SQLParser::parseUpdate()
     // 7 Name = Surname          ok                     done
     this->skipWhitespace();
     std::string tableName = this->parseIdentifier();
+
+    std::cout << tableName << std::endl;
     std::vector<struct UpdateData> updates;        // SET ... WHERE
     this->skipWhitespace();
     if (match("SET"))
@@ -478,6 +480,8 @@ UpdateS *SQLParser::parseUpdate()
             this->skipWhitespace();
             UpdateData valueStructure;
             std::string first_field = this->parseIdentifier(); // first_field - <имя поля>
+            std::cout << first_field << std::endl;
+
             valueStructure.name_first_field = first_field;
 
             this->skipWhitespace();
@@ -510,57 +514,103 @@ UpdateS *SQLParser::parseUpdate()
                         if (match("+"))
                         {
                             this->skipWhitespace();
-                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::string restOfString; 
+                            while (this->query[currentPosition] != '\n' && !isalpha(this->query[currentPosition])){
+                                restOfString += this->query[currentPosition];
+                                this->currentPosition++;
+                            }
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(restOfString);
                             std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
                             long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            std::cout << "resultOfPOLIZ = " << resultOfPOLIZ << std::endl << std::endl;
                             valueStructure.longValue = resultOfPOLIZ;
                             valueStructure.operand = "+";
                         }
                         else if (match("-"))
                         {
                             this->skipWhitespace();
-                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::string restOfString; 
+                            while (this->query[currentPosition] != '\n' && !isalpha(this->query[currentPosition])){
+                                restOfString += this->query[currentPosition];
+                                this->currentPosition++;
+                            }
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(restOfString);
                             std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
                             long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            std::cout << "resultOfPOLIZ = " << resultOfPOLIZ << std::endl << std::endl;
                             valueStructure.longValue = resultOfPOLIZ;
                             valueStructure.operand = "-";
                         }
                         else if (match("*"))
                         {
                             this->skipWhitespace();
-                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::string restOfString; 
+                            while (this->query[currentPosition] != '\n' && !isalpha(this->query[currentPosition])){
+                                restOfString += this->query[currentPosition];
+                                this->currentPosition++;
+                            }
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(restOfString);
                             std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
                             long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            std::cout << "resultOfPOLIZ = " << resultOfPOLIZ << std::endl << std::endl;
                             valueStructure.longValue = resultOfPOLIZ;
                             valueStructure.operand = "*";
                         }
                         else if (match("/"))
                         {
                             this->skipWhitespace();
-                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
+                            std::string restOfString; 
+                            while (this->query[currentPosition] != '\n' && !isalpha(this->query[currentPosition])){
+                                restOfString += this->query[currentPosition];
+                                this->currentPosition++;
+                            }
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(restOfString);
                             std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
                             long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            std::cout << "resultOfPOLIZ = " << resultOfPOLIZ << std::endl << std::endl;
                             valueStructure.longValue = resultOfPOLIZ;
                             valueStructure.operand = "/";
                         }
                         else if (match("%"))
                         {
+                            this->skipWhitespace();
+                            std::string restOfString; 
+                            while (this->query[currentPosition] != '\n' && !isalpha(this->query[currentPosition])){
+                                restOfString += this->query[currentPosition];
+                                this->currentPosition++;
+                            }
+                            std::vector<std::string> tokens = POLIZ::tokenizeExpression(restOfString);
+                            std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
+                            long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                            std::cout << "resultOfPOLIZ = " << resultOfPOLIZ << std::endl << std::endl;
+                            valueStructure.longValue = resultOfPOLIZ;
+                            valueStructure.operand = "%";
                         }
-                        this->skipWhitespace();
-                        std::vector<std::string> tokens = POLIZ::tokenizeExpression(this->query.substr(currentPosition, this->query.length() - currentPosition));
-                        std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
-                        long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
-                        valueStructure.longValue = resultOfPOLIZ;
-                        valueStructure.operand = "%";
                     }
                     else
                     {
-                        // examples  №2 and №4
+                        // examples  №2 and №4: Age = 8*(3-2)+1  , Age = 100
                         this->skipWhitespace();
-                        std::string restOfString = this->query.substr(currentPosition, this->query.length() - currentPosition);
+                        //std::cout << this->query.substr(currentPosition, this->query.length() - currentPosition)  << std::endl;
+                        // std::cout << "OK 565" << std::endl;
+                         //this->query.substr(currentPosition, this->query.length() - currentPosition);
+                        std::string restOfString; 
+                        while (this->query[currentPosition] != '\n' && !isalpha(this->query[currentPosition])){
+                            restOfString += this->query[currentPosition];
+                            this->currentPosition++;
+                        }
+                        //restOfString += " end";
+                        // std::cout << restOfString  << std::endl;
+
                         std::vector<std::string> tokens = POLIZ::tokenizeExpression(restOfString);
+                        // // Output the tokens
+                        // for (const std::string& token : tokens) {
+                        //     std::cout << token << " ";
+                        // }
+                        // std::cout << std::endl;
                         std::vector<std::string> postfixExpression = POLIZ::infixToPostfix(tokens);
                         long resultOfPOLIZ = POLIZ::calculatePostfix(postfixExpression);
+                        std::cout << "resultOfPOLIZ = " << resultOfPOLIZ << std::endl << std::endl;
                         valueStructure.longValue = resultOfPOLIZ;
                         isString = false;
                     }
