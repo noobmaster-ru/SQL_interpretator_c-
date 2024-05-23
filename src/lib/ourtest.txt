@@ -9,7 +9,7 @@ SELECT * FROM Students WHERE Phone LIKE '%45%'
 SELECT Phone FROM Students WHERE Surname='Ivanov'
 SELECT Surname FROM Students WHERE ALL
 SELECT * FROM Students WHERE First_name LIKE '[ABC][^mno]_x%'
-SELECT Surname, Phone FROM Students WHERE Age > 19 AND Surname > 'M'
+SELECT Surname, Phone FROM Students WHERE (Age > 19) AND (Surname > 'M')
 UPDATE Students SET Age = Age+1 WHERE ALL
 SELECT * FROM Students WHERE ALL
 EXIT
