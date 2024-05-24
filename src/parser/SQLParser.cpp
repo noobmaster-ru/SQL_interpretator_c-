@@ -469,6 +469,7 @@ UpdateS *SQLParser::parseUpdate()
 
     // std::cout << tableName << std::endl;
     std::vector<struct UpdateData> updates;        // SET ... WHERE
+    Expression *whereClause;
     this->skipWhitespace();
 
 
@@ -646,8 +647,6 @@ UpdateS *SQLParser::parseUpdate()
                 errorString += "^";
                 throw errorString;
             }
-            std::cout << "before_equal =" << valueStructure.before_equal << std::endl;
-            std::cout << "after_equal =" << valueStructure.after_equal << std::endl;
 
             // valueStructure.isString = isString;
             updates.push_back(valueStructure);
@@ -663,8 +662,7 @@ UpdateS *SQLParser::parseUpdate()
         if (match("WHERE"))
         {
             this->skipWhitespace();
-            Expression *whereClause = this->parseExpression();
-            std::cout << 1;
+            whereClause = this->parseExpression();
         }
         else
         {
@@ -686,7 +684,7 @@ UpdateS *SQLParser::parseUpdate()
     UpdateS *update = new UpdateS();
     update->tableName = tableName;
     update->updates = updates;
-    // update->filters = ;
+    update->filters = whereClause;
     return update;
 }
 
@@ -769,7 +767,7 @@ DeleteS *SQLParser::parseDelete()
 {
     // DELETE FROM tableName WHERE ...
     this->skipWhitespace();
-    std::vector<struct LogExpressionNode> filters;
+    Expression *filters = nullptr;
     std::string tableName;
     if (match("FROM"))
     {
@@ -779,7 +777,7 @@ DeleteS *SQLParser::parseDelete()
         if (match("WHERE"))
         {
             this->skipWhitespace();
-            Expression *whereClause = this->parseExpression();
+            filters = this->parseExpression();
         }
         else
         {

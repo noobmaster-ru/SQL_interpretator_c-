@@ -52,7 +52,7 @@ typedef struct
 typedef struct
 {
     std::string tableName;
-    std::vector<struct LogExpressionNode> filters;
+    Expression *filters;
 } DeleteS;
 
 typedef struct

@@ -22,6 +22,160 @@ SQLExecutor::~SQLExecutor()
 {
 }
 
+bool SQLExecutor::execDelete(DeleteS *deleteStruct)
+{
+    THandle tableHandle;
+    unsigned int numFields;
+    enum Errors res = openTable(const_cast<char *>(deleteStruct->tableName.c_str()), &tableHandle);
+
+    std::unordered_map<std::string, enum FieldType> map;
+    if (getFieldsNum(tableHandle, &numFields) != OK)
+        return 1;
+
+    std::vector<std::string> allFields(numFields);
+    for (unsigned i = 0; i < numFields; ++i)
+    {
+        char *fieldName;
+        if (getFieldName(tableHandle, i, &fieldName) != OK)
+        {
+            return 1;
+        }
+        allFields[i] = fieldName;
+    }
+
+    for (const auto &f : allFields)
+    {
+        enum FieldType type;
+        res = getFieldType(tableHandle, const_cast<char *>(f.c_str()), &type);
+        map.insert(std::make_pair(f, type));
+    }
+
+    moveFirst(tableHandle);
+
+    while (!afterLast(tableHandle))
+    {
+        std::vector<std::variant<long, std::string>> v;
+        for (auto &field : allFields)
+        {
+            switch (map[field])
+            {
+            case Long:
+                long l;
+                res = getLong(tableHandle, const_cast<char *>(field.c_str()), &l);
+                v.push_back(l);
+                break;
+            case Text:
+                char *text;
+                res = getText(tableHandle, const_cast<char *>(field.c_str()), &text);
+                std::string t(text);
+                v.push_back(t);
+                break;
+            }
+        }
+        if (deleteStruct->filters->eval(allFields, v))
+        {
+            std::cout << 1 << std::endl;
+            deleteRec(tableHandle);
+        }
+        res = moveNext(tableHandle);
+    }
+    closeTable(tableHandle);
+}
+
+bool SQLExecutor::execUpdate(UpdateS *updateStruct)
+{
+    THandle tableHandle;
+    unsigned int numFields;
+    enum Errors res = openTable(const_cast<char *>(updateStruct->tableName.c_str()), &tableHandle);
+
+    std::unordered_map<std::string, enum FieldType> map;
+    if (getFieldsNum(tableHandle, &numFields) != OK)
+        return 1;
+
+    std::vector<std::string> allFields(numFields);
+    for (unsigned i = 0; i < numFields; ++i)
+    {
+        char *fieldName;
+        if (getFieldName(tableHandle, i, &fieldName) != OK)
+        {
+            return 1;
+        }
+        allFields[i] = fieldName;
+    }
+
+    for (const auto &f : allFields)
+    {
+        enum FieldType type;
+        res = getFieldType(tableHandle, const_cast<char *>(f.c_str()), &type);
+        map.insert(std::make_pair(f, type));
+    }
+
+    moveFirst(tableHandle);
+
+    while (!afterLast(tableHandle))
+    {
+        std::vector<std::variant<long, std::string>> v;
+        for (auto &field : allFields)
+        {
+            switch (map[field])
+            {
+            case Long:
+                long l;
+                res = getLong(tableHandle, const_cast<char *>(field.c_str()), &l);
+                v.push_back(l);
+                break;
+            case Text:
+                char *text;
+                res = getText(tableHandle, const_cast<char *>(field.c_str()), &text);
+                std::string t(text);
+                v.push_back(t);
+                break;
+            }
+        }
+        if (updateStruct->filters->eval(allFields, v))
+        {
+            for (const auto &update : updateStruct->updates)
+            {
+                std::string r = update.after_equal;
+                for (const auto &field : allFields)
+                {
+                    const std::string s = field;
+                    std::string t;
+                    if (map[field] == Text)
+                    {
+                        char *text;
+                        res = getText(tableHandle, const_cast<char *>(field.c_str()), &text);
+                        std::string a(text);
+                        t = a;
+                    }
+                    else
+                    {
+                        long l;
+                        res = getLong(tableHandle, const_cast<char *>(field.c_str()), &l);
+                        t = std::to_string(l);
+                    }
+
+                    std::string::size_type n = 0;
+                    while ((n = r.find(s, n)) != std::string::npos)
+                    {
+                        r.replace(n, s.size(), t);
+                        n += t.size();
+                    }
+                }
+
+                std::vector<std::string> vec = POLIZ::infixToPostfix(POLIZ::tokenizeExpression(r));
+
+                long result = POLIZ::calculatePostfix(vec);
+                startEdit(tableHandle);
+                putLong(tableHandle, const_cast<char *>(update.before_equal.c_str()), result);
+                finishEdit(tableHandle);
+            }
+        }
+        res = moveNext(tableHandle);
+    }
+    closeTable(tableHandle);
+}
+
 bool SQLExecutor::execCreate(CreateS *createStruct)
 {
     struct TableStruct tableStruct;
@@ -216,4 +370,3 @@ bool SQLExecutor::execSelect(SelectS *selectStruct)
 
     return true;
 }
-

@@ -73,6 +73,6 @@ class AllExpression : public Expression
 {
 public:
     AllExpression() {}
-    bool eval(std::vector<std::string> &col, std::vector<std::variant<long, std::string>> &row) const { return true; }
+    bool eval(std::vector<std::string> &col, std::vector<std::variant<long, std::string>> &row) const override { return true; }
 };
 #endif
