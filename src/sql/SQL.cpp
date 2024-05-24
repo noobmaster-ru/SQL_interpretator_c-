@@ -29,6 +29,14 @@ void SQL::run(std::string query)
         {
             this->executor->execInsert(result->insert);
         }
+        else if (result->type == Update)
+        {
+            this->executor->execUpdate(result->update);
+        }
+        else if (result->type == Delete)
+        {
+            this->executor->execDelete(result->deletee);
+        }
     }
     catch (const std::string &ex)
     {

@@ -24,7 +24,7 @@ bool ComparisonExpression::eval(std::vector<std::string> &col, std::vector<std::
             return this->n ? !res : res;
         }
     }
-    return false;
+    throw "Column" + this->columnName + " not found in table";
 }
 
 bool LRExpression::eval(std::vector<std::string> &col, std::vector<std::variant<long, std::string>> &row) const
@@ -51,6 +51,7 @@ bool LikeExpression::eval(std::vector<std::string> &col, std::vector<std::varian
             return this->like(std::get<std::string>(row[i]), this->pattern);
         }
     }
+    throw "Column" + this->columnName + " not found in table";
 }
 
 bool LikeExpression::matchBracket(char &c, const std::string &pattern, size_t &pIdx) const
@@ -166,5 +167,5 @@ bool InExpression::eval(std::vector<std::string> &col, std::vector<std::variant<
             return this->n ? !res : res;
         }
     }
-    return false;
+    throw "Column" + this->columnName + " not found in table";
 }
